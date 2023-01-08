@@ -1,0 +1,51 @@
+import os
+import spotipy
+import spotipy.util as util
+import configparser
+
+# directory to search for music files
+music_directory = "C:/path/to/music/directory"
+
+# read ini file for Spotify API credentials
+config = configparser.ConfigParser()
+config.read("C:/path/to/ini/file.ini")
+
+# get Spotify API credentials from ini file
+client_id = config["SPOTIFY"]["CLIENT_ID"]
+client_secret = config["SPOTIFY"]["CLIENT_SECRET"]
+
+# get Spotify authorization
+username = config["Spotify"]["username"]
+scope = "user-library-read"
+redirect_uri = "http://localhost/"  # you can use any redirect URI
+token = util.prompt_for_user_token(username, scope, client_id, client_secret, redirect_uri)
+
+# create Spotify API client
+sp = spotipy.Spotify(auth=token)
+
+# list of file names in the directory
+filenames = os.listdir(music_directory)
+
+# iterate through filenames
+for filename in filenames:
+    # get the track information from Spotify
+    track_info = sp.search(q=filename, type="track")
+    track = track_info["tracks"]["items"][0]
+    artist = track["artists"][0]["name"]
+    album = track["album"]["name"]
+    new_filename = track["name"]
+
+    # create artist directory if it doesn't exist
+    artist_directory = "C:/path/to/music/directory/{}".format(artist)
+    if not os.path.exists(artist_directory):
+        os.makedirs(artist_directory)
+
+    # create album directory if it doesn't exist
+    album_directory = "{}/{}".format(artist_directory, album)
+    if not os.path.exists(album_directory):
+        os.makedirs(album_directory)
+
+    # rename and move the file
+    old_path = "{}/{}".format(music_directory, filename)
+    new_path = "{}/{}".format(album_directory, new_filename)
+    os.rename(old_path, new_path)
